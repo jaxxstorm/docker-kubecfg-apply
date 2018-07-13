@@ -1,0 +1,41 @@
+---
+  apiVersion: "extensions/v1beta1"
+  kind: "Deployment"
+  metadata:
+    name: "kubecfg"
+    namespace: "kube-system"
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: "kubecfg"
+      spec:
+        containers:
+          - name: "kubecfg"
+            command:
+              - "/prom-run"
+            args: [ "bash", "./runner.sh", "/k8s/resources", "update"]
+            image: "jaxxstorm/docker-kubecfg-apply:v0.1.0"
+            volumeMounts:
+              - name: "git-repo"
+                mountPath: "/k8s"
+            ports:
+              - containerPort: 9152
+          - name: "git-sync"
+            command:
+              - "/git-sync"
+            env:
+              - name: "GIT_SYNC_REPO"
+                value: "https://github.com/jaxxstorm/guestbook-kubeconfig.git"
+              - name: "GIT_SYNC_DEST"
+                value: "resources"
+            image: "gcr.io/google_containers/git-sync:v2.0.6"
+            ports:
+              - containerPort: 2020
+            volumeMounts:
+              - name: "git-repo"
+                mountPath: "/git"
+        volumes:
+          - name: "git-repo"
+            emptyDir: {}
